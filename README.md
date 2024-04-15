@@ -1,10 +1,9 @@
 # DINES
 This is the official implementation of **DINES** (Disentangled Neural Networks for Signed Digraph). 
 
-* Learning Disentangled Representations in Signed Directed Graphs without Social Assumptions <br/>
+* [Learning Disentangled Representations in Signed Directed Graphs without Social Assumptions](https://www.sciencedirect.com/science/article/abs/pii/S002002552400286X) <br/>
   Geonwoo Ko and Jinhong Jung<br/>
   Information Sciences (accepted)
-* The pre-print version is available at [here](https://arxiv.org/abs/2307.03077).
 
 ## Overview
 Signed graphs can represent complex systems of positive and negative relationships such as trust or preference in various domains.
