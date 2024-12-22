@@ -93,6 +93,7 @@ def main(
     data = load_and_setup_data(config)
 
     # Build encoder and decoder
+    print('set OUT_DIM:', config['OUT_DIM'])
     encoder = DINESEncoder(
         in_dim=config['IN_DIM'],
         out_dim=config['OUT_DIM'],
