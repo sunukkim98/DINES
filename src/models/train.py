@@ -34,7 +34,6 @@ class Trainer:
         pbar = tqdm(range(num_epochs), desc="Epoch...")
         self.encoder.train()
         self.decoder.train()
-        print(data.shape)
         for epoch in pbar:
             self.optimizer.zero_grad()
             Z = self.encoder.forward(data['X'], data['train_edges_each_type'])
