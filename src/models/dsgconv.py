@@ -77,6 +77,7 @@ class DSGConv(nn.Module):
         m_agg.append(f_in) # 이전 임베딩 추가
         
         # 이웃 타입별로 메시지 집계
+        print("edges_each_type: ", edges_each_type)
         for neigh_type_idx, edges_delta in enumerate(edges_each_type):
             m_delta = self.aggregate(f_in, edges_delta, neigh_type_idx=neigh_type_idx)
             m_agg.append(m_delta)
