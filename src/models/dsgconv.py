@@ -6,12 +6,12 @@ from torch_scatter.composite import scatter_softmax
 
 class DSGConv(nn.Module):
     def __init__(self, 
-                 in_dim,
-                 out_dim,
-                 num_factors,
-                 act_fn,
-                 aggr_type,
-                 num_neigh_type=4):
+                 in_dim, # l-1번째 레이어의 노드 임베딩 차원
+                 out_dim, # l번째 레이어의 노드 임베딩 차원
+                 num_factors, # K
+                 act_fn, # 활성화 함수
+                 aggr_type, # 집계 방식 ['sum', 'mean', 'max', 'attn']
+                 num_neigh_type=4): # 이웃 타입의 수 DINES의 경우 + , -, ->, <- 4개
         """
         Build a DSGConv layer
         
@@ -25,22 +25,31 @@ class DSGConv(nn.Module):
         """
         super(DSGConv, self).__init__()
         
+        # 입력 파라미터 설정
         self.d_in = in_dim
         self.d_out = out_dim
         self.K = num_factors
         self.num_neigh_type = num_neigh_type
         self.act_fn = act_fn
         self.aggr_type = aggr_type
+
+        # 레이어 초기화 함수 호출
         self.setup_layers()
-        
+    
+    # 레이어 초기화 함수
     def setup_layers(self):
+
+        # 집계 방식이 'attn'(attention)인 경우
         if self.aggr_type == 'attn':
-            self.disen_attn_weights = nn.ModuleList()
+            self.disen_attn_weights = nn.ModuleList() # nn.ModuleList()를 사용하여 리스트를 만들어줌
+
+            # 이웃 타입의 수 만큼 attention 가중치를 저장
             for _ in range(self.num_neigh_type):
                 disen_attn_w = nn.Parameter(torch.empty(self.K, 2*self.d_in//self.K))
                 torch.nn.init.xavier_uniform_(disen_attn_w)
                 self.disen_attn_weights.append(disen_attn_w)
         
+        # 집계 방식이 'max'(max pooling)인 경우
         elif self.aggr_type == 'max':
             self.disen_max_weights = nn.ParameterList()
             for _ in range(self.num_neigh_type):
@@ -48,6 +57,7 @@ class DSGConv(nn.Module):
                 torch.nn.init.xavier_uniform_(disen_max_w)
                 self.disen_max_weights.append(disen_max_w)
             
+        # 노드 임베딩 업데이트를 위한 가중치와 편향 초기화
         self.disen_update_weights = nn.Parameter(torch.empty(self.K, (self.num_neigh_type+1)*self.d_in//self.K, self.d_out//self.K))
         self.disen_update_bias = nn.Parameter(torch.zeros(1, self.K, self.d_in//self.K))
         torch.nn.init.xavier_uniform_(self.disen_update_weights)
@@ -63,9 +73,10 @@ class DSGConv(nn.Module):
             f_out: aggregated disentangled node embeddings
         """
         
-        m_agg = []
-        m_agg.append(f_in)
+        m_agg = [] # 집계된 메시지를 저장할 리스트
+        m_agg.append(f_in) # 이전 임베딩 추가
         
+        # 이웃 타입별로 메시지 집계
         for neigh_type_idx, edges_delta in enumerate(edges_each_type):
             m_delta = self.aggregate(f_in, edges_delta, neigh_type_idx=neigh_type_idx)
             m_agg.append(m_delta)
@@ -73,6 +84,7 @@ class DSGConv(nn.Module):
         f_out = self.update(m_agg)
         return f_out
 
+    # 집계 함수
     def aggregate(self, f_in, edges_delta, neigh_type_idx):
         """
         Aggregate messsages for each factor by considering neighbor type and aggregator type
@@ -87,11 +99,21 @@ class DSGConv(nn.Module):
             m_delta: aggregated meesages of delta-type neighbors
         """
         
+        # 소스와 타겟 노드 추출
         src, dst = edges_delta[:, 0], edges_delta[:, 1]
         
+        # 집계된 메시지를 저장할 변수 초기화
         out = f_in.new_zeros(f_in.shape)
         
+        # SUM 집계 방식
         if self.aggr_type == 'sum':
+            """
+            scatter_add(src, index, dim=0, out=None)
+            src: 집계할 값
+            index: 집계 대상 노드의 index
+            dim: 연산이 수행될 차원
+            out: 출력 텐서
+            """
             m_delta = scatter_add(f_in[dst], src, dim=0, out=out)
             
         elif self.aggr_type == 'attn':
