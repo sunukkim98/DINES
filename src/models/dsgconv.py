@@ -99,6 +99,7 @@ class DSGConv(nn.Module):
         Returns:
             m_delta: aggregated meesages of delta-type neighbors
         """
+        print("edges_delta: ", edges_delta)
         
         # 소스와 타겟 노드 추출
         src, dst = edges_delta[:, 0], edges_delta[:, 1]
